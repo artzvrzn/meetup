@@ -1,0 +1,31 @@
+version: '3.5'
+services:
+  db:
+    build: postgres
+    image: meetup-postgres:1.0.0
+    restart: always
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5433:5432"
+    networks:
+      - meetup
+  meetup-api:
+    build: meetup-api
+    image: meetup-meetup-api:1.0.0
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/meetup
+      DB_DRIVER_CLASS: org.postgresql.Driver
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      DB_DEFAULT_SCHEMA: app
+    ports:
+      - "8080:8080"
+    networks:
+      - meetup
+    depends_on:
+      - db
+networks:
+  meetup:
+    name: meetup

@@ -1,0 +1,9 @@
+persistence-unit: postgresHibernate
+date-time-format: "mm:HH dd-MM-yyyy"
+hibernate:
+  connection:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/meetup}
+    driver_class: ${DB_DRIVER_CLASS:org.postgresql.Driver}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+  default_schema: ${DB_DEFAULT_SCHEMA:app}

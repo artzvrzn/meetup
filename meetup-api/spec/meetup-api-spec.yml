@@ -1,0 +1,274 @@
+openapi: 3.0.0
+info:
+  title: Meetup Api
+  contact:
+    name: Artem Zavarzin
+    url: https://www.linkedin.com/in/artem-zavarzin-b69a7b240/
+
+  version: 1.0.0
+
+servers:
+  - url: http://{host}:{port}
+    description: custom server
+    variables:
+      host:
+        description: host name
+        default: localhost
+      port:
+        description: port value
+        default: "8080"
+tags:
+  - name: Event
+    description: api endpoints
+paths:
+  /event:
+    post:
+      tags:
+        - Event
+      summary: Create a new event
+      requestBody:
+        $ref: "#/components/requestBodies/CreateEvent"
+      responses:
+        '200':
+          description: "OK"
+        '201':
+          description: "Event has been succefully created"
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+    get:
+      tags:
+        - Event
+      summary: Get list of all events
+      parameters:
+        - in: query
+          name: subject
+          schema:
+            type: string
+          description: filter events by subject
+          required: false
+        - in: query
+          name: organizer
+          schema:
+            type: string
+          description: filter events by organizer
+          required: false
+        - in: query
+          name: from
+          schema:
+            type: string
+            pattern: (2[0-3]|[01][0-9]):[0-5][0-9] (0[1-9]|[1-2][0-9]|3[0-1])-(0[1-9]|1[0-2])-[0-9]{4}
+            example: 12:00 01-01-2020
+          description: filter events by from a date
+          required: false
+        - in: query
+          name: to
+          schema:
+            type: string
+            pattern: (2[0-3]|[01][0-9]):[0-5][0-9] (0[1-9]|[1-2][0-9]|3[0-1])-(0[1-9]|1[0-2])-[0-9]{4}
+            example: 12:00 01-01-2020
+          description: filter events by to a date
+          required: false
+        - in: query
+          name: sort
+          schema:
+            type: string
+            example: subject:asc,organizer:desc,date:asc
+            properties:
+              subject:
+                type: string
+                enum:
+                  - subject:asc
+                  - subject:desc
+              organizer:
+                type: string
+                enum:
+                  - organizer:desc
+                  - organizer:asc
+              date:
+                type: string
+                enum:
+                  - date:asc
+                  - date:desc
+          description: set a sort order
+          required: false
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOfEvents'
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+  /event/{id}:
+    get:
+      tags:
+        - Event
+      summary: Get event by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+    put:
+      tags:
+        - Event
+      summary: Update event by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        $ref: "#/components/requestBodies/CreateEvent"
+      responses:
+        '200':
+          description: "OK"
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+    delete:
+      tags:
+        - Event
+      summary: Delete event by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+            format: uuid
+          required: true
+      responses:
+        '200':
+          description: "OK"
+        '400':
+          $ref: '#/components/responses/Bad_Request'
+        '500':
+          $ref: '#/components/responses/Internal_Server_Error'
+components:
+  requestBodies:
+    CreateEvent:
+      description: A request body to create a new Event
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Event'
+  responses:
+    Bad_Request:
+      description: Request is incorrect
+      content:
+        application/json:
+          examples:
+            t_single_error_response:
+              value:
+                - logref: error
+                  message:  invalid parameters has been passed
+            t_multiple_error_response:
+              value:
+                logref: structured_error
+                errors:
+                  - field: subject
+                    message: subject must not be blank
+                  - field: shcheduled_time
+                    message: subject must not be null
+    Internal_Server_Error:
+      description: Internal server error
+      content:
+        applicaion/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/single_error_response'
+          example:
+            - logref: error
+              message: Server failed to process the request
+  schemas:
+    Event:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 842e1fae-a855-4b6e-8349-3c10266e8736
+          readOnly: true
+        subject:
+          type: string
+          example: subject
+        description:
+          type: string
+          example: description
+        organizer:
+          type: string
+          example: organizer
+        scheduled_time:
+          type: string
+          pattern: (2[0-3]|[01][0-9]):[0-5][0-9] (0[1-9]|[1-2][0-9]|3[0-1])-(0[1-9]|1[0-2])-[0-9]{4}
+          example: "12:00 01-01-2022"
+        location:
+          type: string
+          example: "location"
+    ListOfEvents:
+      description: Events
+      type: array
+      items:
+        $ref: '#/components/schemas/Event'
+    single_error_response:
+      type: object
+      description: An error. Occurres if the server failed to handle a response.
+      required:
+        - logref
+        - message
+      properties:
+        logref:
+          type: string
+          description: error_type
+          example: error
+        message:
+          description: error_message
+          type: string
+          example: Wrong date format
+    multiple_error_response:
+      type: object
+      description: An error. Contains description of multiple field violations.
+      required:
+        - logref
+        - errors
+      properties:
+        logref:
+          type: string
+          description: error type
+        errors:
+          description: name of violated field
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+                description: error message
+                example: subject cannot be blank
+              field:
+                type: string
+                description: name of violated field
+                example: subject
