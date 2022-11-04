@@ -24,39 +24,50 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 public class EventRepositoryImpl implements EventRepository {
+    private final static LinkedList<SortParam> EMPTY_LINKED_LIST = new LinkedList<>();
     private final EntityManagerFactory emf;
     private final ObjectMapper objectMapper;
 
     @Override
     public List<Event> findAll() {
         EntityManager em = emf.createEntityManager();
-        TypedQuery<Event> query = em.createQuery("from Event", Event.class);
-        return query.getResultList();
+        try {
+            TypedQuery<Event> query = em.createQuery("from Event ", Event.class);
+            return query.getResultList();
+        } finally {
+            em.close();
+        }
     }
 
     @Override
     public List<Event> findAll(Map<String, String> params) {
         EntityManager em = emf.createEntityManager();
-        CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaQuery<Event> query = cb.createQuery(Event.class);
-        Root<Event> root = query.from(Event.class);
+        try {
+            CriteriaBuilder cb = em.getCriteriaBuilder();
+            CriteriaQuery<Event> query = cb.createQuery(Event.class);
+            Root<Event> root = query.from(Event.class);
 
-        ParamsPredicateProvider paramsPredicateProvider =
+            ParamsPredicateProvider paramsPredicateProvider =
                 new EventParamsPredicateProvider(root, cb, objectMapper);
-        query.where(paramsPredicateProvider.get(params));
+            query.where(paramsPredicateProvider.get(params));
 
-        SortOrderProvider sortOrderProvider = new EventSortOrderProvider(root, cb);
-        query.orderBy(sortOrderProvider.get(getSortParamsFromMap(params)));
+            SortOrderProvider sortOrderProvider = new EventSortOrderProvider(root, cb);
+            query.orderBy(sortOrderProvider.get(getSortParamsFromMap(params)));
 
-        return em.createQuery(query).getResultList();
+            return em.createQuery(query).getResultList();
+        } finally {
+            em.close();
+        }
     }
 
     @Override
     public Event findById(UUID id) {
         EntityManager em = emf.createEntityManager();
-        Event entity = getEntityById(id, em);
-        em.close();
-        return entity;
+        try {
+            return getEntityById(id, em);
+        } finally {
+            em.close();
+        }
     }
 
     @Override
@@ -123,7 +134,7 @@ public class EventRepositoryImpl implements EventRepository {
     private LinkedList<SortParam> getSortParamsFromMap(Map<String, String> params) {
         String expression = params.get("sort");
         if (expression == null || expression.isBlank()) {
-            return new LinkedList<>();
+            return EMPTY_LINKED_LIST;
         }
         LinkedList<SortParam> sortParams = new LinkedList<>();
         for (String exp: expression.split(",")) {
